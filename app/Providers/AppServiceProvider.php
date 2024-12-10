@@ -22,7 +22,15 @@ class AppServiceProvider extends ServiceProvider
      * @return void
      */
     public function boot()
-    {
-        //
+     {
+         //
+         // 管理画面用のクッキー
+         if (request()->is('admin*')) {
+             config(['session.cookie' => config('session.cookie_admin')]);
+         }
+         // 管理画面用のクッキー
+         if (request()->is('owner*')) {
+             config(['session.cookie' => config('session.cookie_owner')]);
+         }
+     }
     }
-}
