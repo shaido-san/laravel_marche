@@ -32,7 +32,7 @@ class UploadImageRequest extends FormRequest
     {
     return [
       'image' => '指定されたファイルが画像ではありません。',
-      'mines' => '指定された拡張子（jpg/jpeg/png）ではありません。',
+      'mimes' => '指定された拡張子（jpg/jpeg/png）ではありません。',
       'max' => 'ファイルサイズは2MB以内にしてください。',
       ];
     }
