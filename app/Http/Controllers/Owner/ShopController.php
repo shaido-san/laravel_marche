@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Shop;
 use Illuminate\Support\Facades\Storage;
+use InventionImage;
 
 class ShopController extends Controller
 {
@@ -51,12 +52,7 @@ class ShopController extends Controller
     //サイズが大きすぎるとエラーが出る
     public function update(Request $request, $id)
     {
-        $imageFile = $request->image;
-        if(!is_null($imageFile) && $imageFile->isValid() ){
-           Storage::putFile('public/shops', $imageFile);   
-        }
 
-        return redirect()->route('owner.shops.index');
     }
 
 }
