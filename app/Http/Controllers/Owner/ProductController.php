@@ -7,8 +7,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Image;
 use App\Models\Product;
-use App\Models\SecondaryCategory;
+//primaryからsecondaryをとる
+use App\Models\PrimaryCategory;
 use App\Models\Owner;
+use App\Models\Shop;
 
 class ProductController extends Controller
 {
@@ -58,7 +60,21 @@ class ProductController extends Controller
      */
     public function create()
     {
-        //
+        $shop = Shop::where('owner_id', Auth::id())
+        ->select('id', 'name')
+        ->get();
+
+        $image = Image::where('owner_id', Auth::id())
+        ->select('id', 'title', 'filename')
+        ->orderBy('updated_at', 'desc')
+        ->get();
+        
+        //リレーション先の情報をとるときに、N＋1問題を回避のためwithを使う
+        $categories = PrimaryCategory::with('secondary')
+        ->get();
+
+        return view('owner.products.create',
+        compact('shop', 'image', 'categories'));
     }
 
     /**
