@@ -19,8 +19,8 @@
                     <div class="w-1/4 p-2 md:p-4">
                     <a href="{{ route('owner.products.edit', ['product' => $product->id ])}}">  
                     <div class="border rounded-md p-2 md:p-4">
-                        <!-- ここでもproductの中にfilenameがないため、imageFirstを紐づける -->
-                     <x-thumbnail :filename="$product->imageFirst->filename" type="products"/>
+                        <!-- ここでもproductの中にfilenameがないため、imageFirstを紐づける phpのコードが入るため{{}}をつける。そして、文字列が入るため:ははずす-->
+                     <x-thumbnail filename="{{$product->imageFirst->filename ?? ''}}" type="products"/>
                       <!-- <div class="text-black-700">{{ $product->name }}</div> -->
 
                     </div>
