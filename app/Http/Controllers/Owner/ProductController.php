@@ -5,14 +5,15 @@ namespace App\Http\Controllers\Owner;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use App\Models\Image;
+use Illuminate\Support\Facades\DB;
 use App\Models\Product;
 //primaryからsecondaryをとる
 use App\Models\PrimaryCategory;
 use App\Models\Owner;
 use App\Models\Shop;
 use App\Models\Stock;
+use App\Http\Requests\ProductRequest;
 
 class ProductController extends Controller
 {
@@ -85,23 +86,10 @@ class ProductController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(ProductRequest $request)
     {
-        //dd($request);
-        $request->validate([
-            'name' => 'required|string|max:50',
-            'information' => 'required|string|max:1000',
-            'price' => 'required|integer',
-            'sort_order' => 'nullable|integer',
-            'quantity' => 'required|integer',
-            'shop_id' => 'required|exists:shops,id',
-            'category' => 'required|exists:secondary_categories,id',
-            'image1' => 'nullable|exists:images,id',
-            'image2' => 'nullable|exists:images,id',
-            'image3' => 'nullable|exists:images,id',
-            'image4' => 'nullable|exists:images,id',
-            'is_selling' => 'required'
-        ]);
+        // validationは多いためProductRequestに移動
+        //indexではnameとしてはcategoryだが、テーブルとしては'secondary_category_idだから気をつける
 
         try{
             DB::transaction(function () use($request){
@@ -111,7 +99,6 @@ class ProductController extends Controller
                     'price' => $request->price,
                     'sort_order' => $request->sort_order,
                     'shop_id' => $request->shop_id,
-                    //indexではnameとしてはcategoryだが、テーブルとしては'secondary_category_idだから気をつける。
                     'secondary_category_id' => $request->category,
                     'image1' => $request->image1,
                     'image2' => $request->image2,
@@ -142,38 +129,96 @@ class ProductController extends Controller
 
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+   
     public function edit($id)
     {
-        //
+        $product = Product::findOrFail($id);
+       
+        $quantity = Stock::where('product_id', $product->id)
+        ->sum('quantity');
+
+        $shops = Shop::where('owner_id', Auth::id())
+        ->select('id', 'name')
+        ->get();
+
+        $images = Image::where('owner_id', Auth::id())
+        ->select('id', 'title', 'filename')
+        ->orderBy('updated_at', 'desc')
+        ->get();
+
+        
+        
+        //リレーション先の情報をとるときに、N＋1問題を回避のためwithを使う
+        $categories = PrimaryCategory::with('secondary')
+        ->get();
+
+        
+
+        return view('owner.products.edit',
+        compact('product', 'quantity', 'shops',
+         'images', 'categories'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
+    
+    public function update(ProductRequest $request, $id)
     {
-        //
+        $request->validate([
+            'current_quantity' => 'required|integer',
+        ]);
+
+        $product = Product::findOrFail($id);
+        $quantity = Stock::where('product_id', $product->id)
+        ->sum('quantity');
+
+        if($request->current_quantity !== strval($quantity)){
+            $id = $request->route()->parameter('product'); 
+            return redirect()->route('owner.product.edit', ['product' => $id])
+            ->with(['message' => '在庫数が変更されています。確認してください。',
+                   'status' => 'alert']);
+        }else {
+              //ProductとStockを同時に変更するため、トランザクションをかけておく。一つの商品のショップidを指定する。
+            try{
+                DB::transaction(function () use($request, $product){
+                    
+                        $product->name = $request->name;
+                        $product->information = $request->information;
+                        $product->price = $request->price;
+                        $product->sort_order = $request->sort_order;
+                        $product->shop_id = $request->shop_id;
+                        $product->secondary_category_id = $request->category;
+                        $product->image1 = $request->image1;
+                        $product->image2 = $request->image2;
+                        $product->image3 = $request->image3;
+                        $product->image4 = $request->image4;
+                        $product->is_selling = $request->is_selling;
+                        //storeメソッドではcreateで保存していたが、今回は保存していない状態なのでsaveを追加
+                        $product->save();
+                    
+                    if($request->type === \Constant::PRODUCT_LIST['add']){
+                        $newQuantity = $request->quantity;
+                    }
+                    if($request->type === \Constant::PRODUCT_LIST['reduce']){
+                        $newQuantity = $request->quantity * -1;
+                    }
+                    Stock::create([
+                       'product_id' => $product->id,
+                       'type' => $request->type,
+                       'quantity' => $newQuantity,
+                    ]);
+                }, 2);
+            
+            }catch(Throwable $e){
+                Log::error($e);
+                throw $e;
+            }
+    
+            
+    
+            return redirect()
+            ->route('owner.products.index')
+            ->with(['message' => '商品情報を更新しました。',
+            'status' => 'info']);
+        }
     }
 
     /**

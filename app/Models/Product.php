@@ -9,6 +9,7 @@ use App\Models\SecondaryCategory;
 use App\Models\Image;
 use App\Models\Stock;
 
+
 class Product extends Model
 {
     use HasFactory;
@@ -38,9 +39,24 @@ class Product extends Model
     }
 
     #productsテーブルのカラム名('image1')と被ってはいけないため、imageFirstにしてある
-        public function imageFirst()
+    public function imageFirst()
     {
-        return $this->belongsTo(image::class, 'image1', 'id');
+        return $this->belongsTo(Image::class, 'image1', 'id');
+    }
+
+    public function imageSecond()
+    {
+        return $this->belongsTo(Image::class, 'image2', 'id');
+    }
+
+    public function imageThird()
+    {
+        return $this->belongsTo(Image::class, 'image3', 'id');
+    }
+
+    public function imageFourth()
+    {
+        return $this->belongsTo(Image::class, 'image4', 'id');
     }
 
     public function stock()
