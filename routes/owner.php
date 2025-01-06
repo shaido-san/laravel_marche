@@ -24,9 +24,9 @@ use App\Http\Controllers\Owner\ProductController;
 |
 */
 
- Route::get('/', function () {
-    return view('owner.welcome');
- });
+//  Route::get('/', function () {
+//     return view('owner.welcome');
+//  });
 
 Route::prefix('shops')->
     middleware('auth:owners')->group(function(){
