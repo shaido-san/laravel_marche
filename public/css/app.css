@@ -830,6 +830,10 @@ select{
   margin-top: 2rem;
   margin-bottom: 2rem;
 }
+.my-2{
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
 .-ml-px{
   margin-left: -1px;
 }
