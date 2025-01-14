@@ -5,8 +5,11 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Cart;
-use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\Stock;
+use Illuminate\Support\Facades\Auth;
+
+
 
 
 class CartController extends Controller
@@ -60,20 +63,43 @@ class CartController extends Controller
         $user = User::findOrFail(Auth::id());
         $products = $user->products;
 
+        # 在庫を確認し、決済前に在庫を減らしておく（他のユーザーもいるため）
         $lineItems = [];
         foreach($products as $product){
-            $lineItem = [
-                #ストライプver16.4で受け取れる形にする
-                'name' => $product->name,
-                'descrrption' => $product->information,
-                'amount' => $product->price,
-                'currency' => 'jpy',
-                'quantity' => $product->pivot->quantity,
+            $quantity ='';
+            $quantity = Stock::where('product_id', $product->id)->sum('quantity');
 
-            ];
-            array_push($lineItems, $lineItem);
+            # 商品の中で一つでも買えないものがあれば、リダイレクトし、キャンセルする。
+            if($product->pivot->quantity > $quantity){
+                return redirect()->route('user.cart.index');
+            } else {
+                $lineItem = [
+                    #ストライプver16.4で受け取れる形にする
+                    'name' => $product->name,
+                    'descrrption' => $product->information,
+                    'amount' => $product->price,
+                    'currency' => 'jpy',
+                    'quantity' => $product->pivot->quantity,
+    
+                ];
+                array_push($lineItems, $lineItem);
+
+            }
+            
         }
         // dd($lineItems);
+        # カートに入れた分だけ在庫を減らす処理
+        foreach($products as $product){
+            Stock::create([
+                'product_id' => $product->id,
+                'type' => \Constant::PRODUCT_LIST['reduce'],
+                'quantity' => $product->pivot->quantity * -1
+             ]);
+        }
+
+        dd('テスト');
+
+
         \Stripe\Stripe::setApiKey(env('STRIPE_SECRET_KEY'));
         $session = \Stripe\Checkout\Session::create([
             'payment_method_types' => ['card'],
