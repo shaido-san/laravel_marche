@@ -79,7 +79,7 @@ class CartController extends Controller
                         'name' => $product->name,
                         'description' => $product->information,
                     ],
-                    'unit_amount' => $product->price * 100, // 金額は「円」ではなく「最小通貨単位（＝1円＝100）」にする必要あり
+                    'unit_amount' => $product->price
                 ],
                 'quantity' => $product->pivot->quantity,
             ];
@@ -105,7 +105,7 @@ class CartController extends Controller
         'line_items' => $lineItems, // 修正：配列の形に修正
         'mode' => 'payment',
         'success_url' => route('user.cart.success'),
-        'cancel_url' => route('user.cart.index'),
+        'cancel_url' => route('user.cart.cancel'),
     ]);
 
     $publicKey = env('STRIPE_PUBLIC_KEY');
@@ -120,4 +120,18 @@ class CartController extends Controller
 
     return redirect()->route('user.items.index');
   }
+
+  public function cancel()
+  {
+    $user = User::findOrFail(Auth::id());
+    foreach ($user->products as $product) {
+        Stock::create([
+            'product_id' => $product->id,
+            'type' => \Constant::PRODUCT_LIST['add'],
+            'quantity' => $product->pivot->quantity
+        ]);
+        }
+
+        return redirect()->route('user.cart.index');
+    }
 }
