@@ -1,3 +1,13 @@
+## 通販サイトづくり
+
+## ダウンロード方法
+
+git clone https://github.com/shaido-san/laravel_marche.git
+
+git clone ブランチを指定してダウンロードする場合
+git clone -b ブランチ名 https://github.com/shaido-san/laravel_marche.git
+
+
 ## インストール後の実施事項
 
 画像のダミーデータは
